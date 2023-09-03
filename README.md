@@ -6,6 +6,7 @@
 
 [The Developer’s Edge: How To Become A Senior Developer](https://zerotomastery.io/blog/developers-edge-how-to-become-a-senior-developer/?utm_source=medium&utm_medium=dont-be-junior-the-roadmap)
 
+[Code Review Best Practives](https://blog.palantir.com/code-review-best-practices-19e02780015f)
 
 ## Mindset
 
