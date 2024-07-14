@@ -1,17 +1,12 @@
 ---
-title: "CSS in JSを理解する"
-emoji: "👩‍🎤"
-type: "tech" # tech: 技術記事 / idea: アイデア
-topics: ['react', 'css', 'emotion']
-published: false
+title: 'Zod and MUI'
+description: 'Using Zod and MUI TextField for input form'
+topics: ['zod', 'mui']
 ---
-
-# ZodとMUIのTextFieldを利用して入力フォーム
 
 ## 初めに
 
 [Zod](https://zod.dev/)とは、TypeScript向けのスキーマ宣言とデータ検証のためのライブラリです
-
 
 ## 準備
 
@@ -51,13 +46,8 @@ MUI
 
 ```jsx
 import { TextField } from '@mui/material'
-
-<TextField
-  label={
-    hasError
-      ? `入力内容が間違っています`
-      : '価格（から）'
-  }
+;<TextField
+  label={hasError ? `入力内容が間違っています` : '価格（から）'}
   type="number"
   onChange={handleChange}
   error={hasError}
