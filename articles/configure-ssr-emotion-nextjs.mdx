@@ -1,0 +1,130 @@
+---
+title: How to Configure Server-Side Rendering (SSR) with Emotion in Next.js
+published: true
+---
+
+When using CSS-in-JS, it's important to server-side render (SSR) certain CSS, such as global styles for background or font colors, to avoid displaying an unstyled page initially. This article explains how to configure Emotion with Next.js for SSR, including installing necessary packages, setting up the `_document.tsx` file, and using the `ThemeProvider` in `_app.tsx`.
+
+### install necessary packages
+
+If you haven’t already, install `@emotion/react` and `@emotion/server`
+
+Official documentation : [https://emotion.sh/docs/@emotion/server](https://emotion.sh/docs/@emotion/server)
+
+```bash
+npm install @emotion/react @emotion/server @emotion/styled
+```
+
+### Configure _document.tsx file
+
+Next.js uses `_document.tsx` to control the server-side rendering of your document. You need to set up this file to work with Emotion.
+Create or update your `_document.tsx`file in the pages directory as the following
+
+```jsx
+import React from 'react'
+
+import { cache } from '@emotion/css'
+import { CacheProvider } from '@emotion/react'
+import createEmotionServer from '@emotion/server/create-instance'
+import Document, {
+  Html,
+  Head,
+  Main,
+  NextScript,
+  DocumentContext,
+} from 'next/document'
+
+export default class MyDocument extends Document {
+  static async getInitialProps(ctx: DocumentContext) {
+    const originalRenderPage = ctx.renderPage
+
+    const { extractCriticalToChunks } = createEmotionServer(cache)
+
+    ctx.renderPage = () =>
+      originalRenderPage({
+        enhanceApp: (App) => (props) => (
+          <CacheProvider value={cache}>
+            <App {...props} />
+          </CacheProvider>
+        ),
+      })
+
+    const initialProps = await Document.getInitialProps(ctx)
+    const emotionStyles = extractCriticalToChunks(initialProps.html)
+    const emotionStyleTags = emotionStyles.styles.map((style) => (
+      <style
+        data-emotion={`${style.key} ${style.ids.join(' ')}`}
+        key={style.key}
+        dangerouslySetInnerHTML={{ __html: style.css }}
+      />
+    ))
+
+    return {
+      ...initialProps,
+      styles: [
+        ...React.Children.toArray(initialProps.styles),
+        ...emotionStyleTags,
+      ],
+    }
+  }
+
+  render() {
+    return (
+      <Html lang="en">
+        <Head/>
+        <body>
+          <Main />
+          <NextScript />
+        </body>
+      </Html>
+    )
+  }
+}
+
+```
+
+### Configure ThemeProvider to _app.tsx
+
+Make sure you’re using the `ThemeProvider` from `@emotion/react` to apply your theme. Here’s an example:
+
+```jsx
+// /pages/_app.tsx
+
+import { ThemeProvider, CacheProvider } from '@emotion/react';
+import { cache } from '@emotion/css';
+
+// example theme
+const theme = {
+  colors: {
+    primary: '#0070f3',
+  },
+};
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <CacheProvider value={cache}>
+      <ThemeProvider theme={theme}>
+        <Component {...pageProps} />
+      </ThemeProvider>
+    </CacheProvider>
+  );
+}
+
+export default MyApp;
+```
+
+### Done!
+
+And voila! Now you can see that there are two `<style>` tags with data-emotion attribute inside `<head>`
+
+Feel free to inspect my blog using developer tools, and see inside the `<head>` tag!
+
+`<style data-emotion=”css-global”>` gets injected during SSR (build time)
+
+![emotion-style-tag-ssr](/public/configure-ssr-emotion-nextjs/emotion-ssr-tag.png)
+
+while, the other style tag gets injected during CSR.
+
+![emotion-style-tag](/public/configure-ssr-emotion-nextjs/emotion-csr-tag.png)
+
+now the user won’t have to stare at an unstyled page while the components are being rendered!
