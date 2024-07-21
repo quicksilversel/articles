@@ -1,5 +1,6 @@
 ---
 title: How to Configure Server-Side Rendering (SSR) with Emotion in Next.js
+topics: ['nextjs', 'emotion', 'css']
 published: true
 ---
 
@@ -15,7 +16,7 @@ Official documentation : [https://emotion.sh/docs/@emotion/server](https://emoti
 npm install @emotion/react @emotion/server @emotion/styled
 ```
 
-### Configure _document.tsx file
+### Configure \_document.tsx file
 
 Next.js uses `_document.tsx` to control the server-side rendering of your document. You need to set up this file to work with Emotion.
 Create or update your `_document.tsx`file in the pages directory as the following
@@ -83,22 +84,22 @@ export default class MyDocument extends Document {
 
 ```
 
-### Configure ThemeProvider to _app.tsx
+### Configure ThemeProvider to \_app.tsx
 
 Make sure you’re using the `ThemeProvider` from `@emotion/react` to apply your theme. Here’s an example:
 
 ```jsx
 // /pages/_app.tsx
 
-import { ThemeProvider, CacheProvider } from '@emotion/react';
-import { cache } from '@emotion/css';
+import { ThemeProvider, CacheProvider } from '@emotion/react'
+import { cache } from '@emotion/css'
 
 // example theme
 const theme = {
   colors: {
     primary: '#0070f3',
   },
-};
+}
 
 function MyApp({ Component, pageProps }) {
   return (
@@ -107,10 +108,10 @@ function MyApp({ Component, pageProps }) {
         <Component {...pageProps} />
       </ThemeProvider>
     </CacheProvider>
-  );
+  )
 }
 
-export default MyApp;
+export default MyApp
 ```
 
 ### Done!
@@ -121,10 +122,10 @@ Feel free to inspect my blog using developer tools, and see inside the `<head>` 
 
 `<style data-emotion=”css-global”>` gets injected during SSR (build time)
 
-![emotion-style-tag-ssr](/public/configure-ssr-emotion-nextjs/emotion-ssr-tag.png)
+![emotion-style-tag-ssr](/configure-ssr-emotion-nextjs/emotion-ssr-tag.png)
 
 while, the other style tag gets injected during CSR.
 
-![emotion-style-tag](/public/configure-ssr-emotion-nextjs/emotion-csr-tag.png)
+![emotion-style-tag](/configure-ssr-emotion-nextjs/emotion-csr-tag.png)
 
 now the user won’t have to stare at an unstyled page while the components are being rendered!
