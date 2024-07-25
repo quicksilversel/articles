@@ -1,5 +1,6 @@
 ---
 title: 'Setting Up Dark Theme with emotion & Next.js'
+description: 'Set up a dark/light theme toggle in a NextJS app with Emotion, covering theme colors, user preferences, and a theme toggle button.'
 topics: ['nextjs', 'emotion', 'css']
 published: true
 date: '2024-07-21'
@@ -41,7 +42,7 @@ export const lightTheme = {
 >    primary: string
 >  }
 > }
->```
+> ```
 
 ### Detect user preference
 
@@ -94,11 +95,11 @@ function MyApp({ Component, pageProps }: AppProps) {
     const prefersLight =
       window.matchMedia &&
       window.matchMedia('(prefers-color-scheme: light)').matches
-	
+
     if (savedTheme) {
       setTheme(savedTheme === 'dark' ? 'dark' : 'light')
     }
-	
+
     if (prefersLight) {
       setTheme('light')
     }
@@ -119,15 +120,15 @@ export default MyApp
 ### And finally, Use it in your components!
 
 ```jsx
-import styled from "@emotion/styled";
+import styled from '@emotion/styled'
 
 export const MyComponent = () => {
-  return <Text>text goes here</Text>;
-};
+  return <Text>text goes here</Text>
+}
 
 const Text = styled.span`
   color: ${({ theme }) => theme.text};
-`;
+`
 ```
 
 ## Bonus : Setting Up Theme Toggle Button
@@ -155,7 +156,7 @@ export const ThemeToggler = ({ theme, setTheme }: ThemeContext) => {
 
 ### App
 
-add the following to return() in _app.tsx
+add the following to return() in \_app.tsx
 
 ```jsx
 <ThemeToggler theme={theme} setTheme={setTheme} />
