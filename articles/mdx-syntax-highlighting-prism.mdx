@@ -1,0 +1,123 @@
+---
+title: 'How to Add Syntax Highlighting to MDX with Prism and Next.js'
+description: 'Learn how to add beautiful, readable syntax highlighting to your MDX blog using Prism, Next.js, and TypeScript. Step-by-step guide with code examples.'
+topics: ['nextjs', 'react', 'mdx']
+category: 'frontend'
+published: true
+date: '2024-07-15'
+---
+
+## Introduction
+
+Adding syntax highlighting to your blog or documentation makes code more readable, professional, and fun to look at. In this guide, we’ll walk through how to implement code highlighting in your MDX-powered Next.js site using `prism-react-renderer`.
+
+## Intended Audience
+
+This tutorial is for developers who are already familiar with React, TypeScript, MDX, and the basics of Next.js.
+
+### Dependencies
+
+Here are the versions used in this tutorial:
+
+- [Next.js](https://nextjs.org/): 14.2.4
+- [next-mdx-remote](https://github.com/hashicorp/next-mdx-remote): 5.0.0
+- [prism-react-renderer](https://github.com/FormidableLabs/prism-react-renderer): 2.3.1
+- [React](https://react.dev/): 18.3.1
+
+## Step 1: Install Prism
+
+First, install the Prism renderer:
+
+```bash
+npm install --save prism-react-renderer
+```
+
+## Step 2: Create a Syntax Highlighting Component
+
+Here’s a simple reusable component to highlight code blocks in MDX:
+
+```tsx
+import { ReactNode, isValidElement } from 'react'
+import { Highlight } from 'prism-react-renderer'
+
+type Props = {
+  children?: ReactNode
+}
+
+export const HighlightedCode = ({ children }: Props) => {
+  if (
+    !isValidElement(children) ||
+    typeof children.props.children !== 'string'
+  ) {
+    return null
+  }
+
+  const code = children.props.children
+  const language = children.props.className?.replace('language-', '').trim()
+
+  if (!code || !language) return null
+
+  return (
+    <Highlight code={code} language={language}>
+      {({ tokens, getLineProps, getTokenProps }) => (
+        <pre>
+          {tokens.map((line, index) => (
+            <div key={`token-${index}`} {...getLineProps({ line })}>
+              {line.map((token, index) => (
+                <span key={`line-${index}`} {...getTokenProps({ token })} />
+              ))}
+            </div>
+          ))}
+        </pre>
+      )}
+    </Highlight>
+  )
+}
+```
+
+### Why `ReactNode`?
+
+While `JSX.Element` would be stricter, MDX components often come in with a broader `ReactNode` shape. That’s why we use:
+
+```tsx
+type Props = {
+  children?: ReactNode
+}
+```
+
+And guard against invalid inputs like this:
+
+```tsx
+if (!isValidElement(children) || typeof children.props.children !== 'string') {
+  return null
+}
+```
+
+## Step 3: Handle Breaking Changes in v2
+
+In Prism v2+, `defaultProps` has been removed. If you run into this error:
+
+```bash
+Module '"prism-react-renderer"' has no exported member 'defaultProps'
+```
+
+It’s expected. The props are now handled inside the `Highlight` component itself.
+
+## Step 4: Plug It into Your MDX
+
+Finally, use it inside your MDX setup like this:
+
+```tsx
+<MDXRemote
+  {...source}
+  components={{
+    pre: HighlightedCode,
+  }}
+/>
+```
+
+## 🎉 That’s a Wrap
+
+You now have clean, customizable code highlighting in your MDX blog — no extra bloat or outdated packages. It’s fast, minimal, and plays nicely with your Next.js and TypeScript stack.
+
+Happy coding 💫

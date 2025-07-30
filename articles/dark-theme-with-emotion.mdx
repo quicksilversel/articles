@@ -1,5 +1,5 @@
 ---
-title: 'Setting Up Dark Theme with emotion & Next.js'
+title: 'Setting Up Dark Theme with Emotion & Next.js'
 description: 'Set up a dark/light theme toggle in a NextJS app with Emotion, covering theme colors, user preferences, and a theme toggle button.'
 topics: ['nextjs', 'emotion', 'css']
 category: 'frontend'
@@ -9,11 +9,22 @@ date: '2024-07-21'
 
 ## Introduction
 
-In this guide, we will walk you through the process of setting up a dark/light theme toggle using Emotion in a NextJS application. We will cover defining theme colors, detecting user preferences, and integrating the theme provider at the highest level of your code. Additionally, we'll show you how to create a theme toggle button component to switch between dark and light modes easily.
+Adding a dark mode toggle is one of those features that feels magical and polished — and it’s easier than you might think using Emotion and Next.js ✨
 
-### Define Colors for the theme in colors.ts
+In this guide, we’ll walk through:
 
-```jsx
+- Defining light and dark theme colors
+- Detecting system/user preferences
+- Wrapping your app with `ThemeProvider`
+- Creating a toggle button
+
+Let’s dive in!
+
+## 🎨 Define Theme Colors
+
+Create a `themes.ts` file to manage your color palettes.
+
+```ts
 const commonTheme = {
   primary: 'hsl(245deg, 100%, 60%)',
 }
@@ -31,26 +42,32 @@ export const lightTheme = {
 }
 ```
 
-> For TypeScript Users, define the theme type in theme.d.ts
->
-> ```jsx
-> import '@emotion/react'
->
-> declare module '@emotion/react' {
->  export interface Theme {
->    background: string
->    text: string
->    primary: string
->  }
-> }
-> ```
+> 💡 Tip: Stick to HSL for easier theming — it’s super intuitive when adjusting hue/lightness.
 
-### Detect user preference
+### 🧑‍💻 TypeScript Users: Define the Theme
 
-1. Detect user’s system preference and reflect it
-2. If the user’s preference is set in localStorage, override it
+Create a `theme.d.ts` file to extend Emotion's default theme:
 
-```jsx
+```ts
+import '@emotion/react'
+
+declare module '@emotion/react' {
+  export interface Theme {
+    background: string
+    text: string
+    primary: string
+  }
+}
+```
+
+## 🧠 Detect User Preference
+
+In your `_app.tsx`, set the theme based on:
+
+- System preference (via `prefers-color-scheme`)
+- User override from `localStorage`
+
+```ts
 useEffect(() => {
   const savedTheme = localStorage.getItem('theme')
   const prefersLight =
@@ -59,29 +76,23 @@ useEffect(() => {
 
   if (savedTheme) {
     setTheme(savedTheme === 'dark' ? 'dark' : 'light')
-  }
-
-  if (prefersLight) {
+  } else if (prefersLight) {
     setTheme('light')
   }
 }, [])
 ```
 
-### Include it in the highest level of your code
+## 🔌 Add ThemeProvider in `_app.tsx`
 
-In our case, we will include it in`_app.tsx`
+Make sure your app is wrapped in both `ThemeProvider` and `CacheProvider` (from Emotion):
 
-```jsx
+```tsx
 import { useState, useEffect } from 'react'
-
-import { cache } from '@emotion/css'
 import { ThemeProvider, CacheProvider } from '@emotion/react'
-import { AppProps } from 'next/app'
-
-// import style definitions by theme
+import { cache } from '@emotion/css'
+import type { AppProps } from 'next/app'
 import { lightTheme, darkTheme } from '@/components/Styles/themes'
 
-// define the theme for useState
 export type ThemeContext = {
   theme: 'light' | 'dark'
   setTheme: (theme: 'light' | 'dark') => void
@@ -90,7 +101,6 @@ export type ThemeContext = {
 function MyApp({ Component, pageProps }: AppProps) {
   const [theme, setTheme] = useState<ThemeContext['theme']>('dark')
 
-	// check for user preference
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     const prefersLight =
@@ -99,17 +109,16 @@ function MyApp({ Component, pageProps }: AppProps) {
 
     if (savedTheme) {
       setTheme(savedTheme === 'dark' ? 'dark' : 'light')
-    }
-
-    if (prefersLight) {
+    } else if (prefersLight) {
       setTheme('light')
     }
-	}, [])
+  }, [])
 
   return (
     <CacheProvider value={cache}>
       <ThemeProvider theme={theme === 'dark' ? darkTheme : lightTheme}>
         <Component {...pageProps} />
+        <ThemeToggler theme={theme} setTheme={setTheme} />
       </ThemeProvider>
     </CacheProvider>
   )
@@ -118,47 +127,44 @@ function MyApp({ Component, pageProps }: AppProps) {
 export default MyApp
 ```
 
-### And finally, Use it in your components!
+## 🧪 Use Theme in Components
 
-```jsx
+Now you can use the theme in styled components:
+
+```tsx
 import styled from '@emotion/styled'
-
-export const MyComponent = () => {
-  return <Text>text goes here</Text>
-}
 
 const Text = styled.span`
   color: ${({ theme }) => theme.text};
 `
+
+export const MyComponent = () => {
+  return <Text>Hello, theme world!</Text>
+}
 ```
 
-## Bonus : Setting Up Theme Toggle Button
+## 🔘 Add a Theme Toggle Button
 
-### Create a component for theme toggling
+Let’s make it easy for users to switch modes.
 
-```jsx
-import type { ThemeContext } from "@/pages/_app";
+```tsx
+import type { ThemeContext } from '@/pages/_app'
 
 export const ThemeToggler = ({ theme, setTheme }: ThemeContext) => {
   const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-    localStorage.setItem("theme", theme === "light" ? "dark" : "light");
-  };
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+  }
 
-  return (
-    <Container>
-      <Button type="button" onClick={toggleTheme}>
-        {theme === "dark" ? <DarkModeIcon /> : <LightModeIcon />}
-      </Button>
-    </Container>
-  );
-};
+  return <button onClick={toggleTheme}>{theme === 'dark' ? '🌙' : '☀️'}</button>
+}
 ```
 
-### App
+Place it anywhere in your layout or inside `_app.tsx` as shown earlier.
 
-add the following to return() in \_app.tsx
+## ✅ That’s It!
 
-```jsx
-<ThemeToggler theme={theme} setTheme={setTheme} />
-```
+You now have a fully working light/dark theme in your Next.js app using Emotion. It respects system settings and user preferences, and it’s super easy to expand on.
+
+Let me know if you want to add smooth transitions or theme-aware icons next! 🌗
