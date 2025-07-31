@@ -1,33 +1,20 @@
 ---
 title: 'Deploying a Next.js SSG App to S3 with GitHub Actions'
-description: 'Learn how to convert your Next.js app to Static Site Generation (SSG) and deploy it to AWS S3 using GitHub Actions.'
-topics: ['nextjs', 'AWS', 'CI/CD', 'GHA']
-category: 'sre'
+description: 'Setups to deploy a Next.js app with Static Site Generation (SSG) to AWS S3 using GitHub Actions.'
+topics: ['GHA']
+category: 'devops'
 published: true
 date: '2024-03-15'
 ---
 
-## Introduction
+## What is SSG again?
 
-Want to deploy your blazing-fast static Next.js app to AWS S3? Let’s walk through how to:
+SSG (Static Site Generation) builds HTML at build time, not per request. It means fast page loads and zero server costs!
+This is ideal for S3 hosting and hosting static sites affordably.
 
-1. Convert a Next.js app to use Static Site Generation (SSG)
-2. Export it to static files
-3. Deploy it to S3 via GitHub Actions 🚀
+## Update `next.config.js`
 
-> 💡 What is SSG?
->
-> <br />
-> **SSG** (Static Site Generation) is one of the rendering strategies in
-> Next.js. It builds all HTML at build time and not per request. This means
-> **faster page loads**, **no server costs**, and it's **perfect for S3
-> hosting**.
->
-> You can read more [here](https://nextjs.org/docs/pages/building-your-application/rendering/static-generation)
-
-## 🛠️ Step 1: Update `next.config.js`
-
-You need to configure Next.js to **export** your app as static files.
+Tell Next.js to export the app as a static site.
 
 ```js
 // next.config.js
@@ -38,21 +25,9 @@ const nextConfig = {
 module.exports = nextConfig
 ```
 
-This tells Next.js to generate a static version of your site into the `out/` directory when you run `npm run build`.
+## GitHub Actions Workflow
 
-## 🧪 Step 2: Add `npm run build` Script
-
-If it's not already in your `package.json`, add this:
-
-```json
-"scripts": {
-  "build": "next build && next export"
-}
-```
-
-## 🚀 Step 3: Deploy to S3 with GitHub Actions
-
-Here’s a complete example workflow:
+Automate the deployment with GitHub Actions. This workflow builds the Next.js app and uploads it to S3.
 
 ```yaml
 name: Deploy to S3
@@ -106,16 +81,8 @@ jobs:
           aws s3 cp --recursive ./out/ s3://your-static-site-bucket-name --acl public-read
 ```
 
-## ⚠️ Gotchas to Watch Out For
+## Notes
 
-- Make sure your pages **don’t use server-side features** like `getServerSideProps()`. Use `getStaticProps()` or no data fetching at all.
-- Only public routes will be exported. Dynamic routes with fallback won't work unless pre-rendered.
-- S3 doesn’t support client-side routing out of the box. For apps using Next.js routing, consider setting up S3 + CloudFront with a fallback to `index.html`.
-
-## ✅ That’s It!
-
-You’ve just turned your Next.js app into a static site and deployed it with zero manual steps. Now every push to `main` goes straight to production ✨
-
-Let me know if you want help setting up preview deployments or adding CloudFront for CDN support next!
-
-Happy shipping! 🛳️
+- Don't use `getServerSideProps()` — only `getStaticProps()` or plain pages.
+- Dynamic routes won't work unless they're pre-rendered.
+- S3 doesn't handle client-side routing. Might need CloudFront + fallback if routing breaks.
