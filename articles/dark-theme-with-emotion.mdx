@@ -1,19 +1,17 @@
 ---
-title: 'Setting Up Dark Theme with emotion & Next.js'
-description: 'Set up a dark/light theme toggle in a NextJS app with Emotion, covering theme colors, user preferences, and a theme toggle button.'
-topics: ['nextjs', 'emotion', 'css']
+title: 'Setting Up Dark Theme with Emotion & Next.js'
+description: 'Set up a dark/light theme toggle in a NextJS app with Emotion that respects user preferences'
+topics: ['css in js']
 category: 'frontend'
 published: true
 date: '2024-07-21'
 ---
 
-## Introduction
+## Define Theme Colors
 
-In this guide, we will walk you through the process of setting up a dark/light theme toggle using Emotion in a NextJS application. We will cover defining theme colors, detecting user preferences, and integrating the theme provider at the highest level of your code. Additionally, we'll show you how to create a theme toggle button component to switch between dark and light modes easily.
+Setting up light and dark theme palettes upfront makes it easier to manage and switch between them later. I usually keep a `themes.ts` file to centralize color definitions.
 
-### Define Colors for the theme in colors.ts
-
-```jsx
+```ts
 const commonTheme = {
   primary: 'hsl(245deg, 100%, 60%)',
 }
@@ -31,26 +29,32 @@ export const lightTheme = {
 }
 ```
 
-> For TypeScript Users, define the theme type in theme.d.ts
->
-> ```jsx
-> import '@emotion/react'
->
-> declare module '@emotion/react' {
->  export interface Theme {
->    background: string
->    text: string
->    primary: string
->  }
-> }
-> ```
+I’ve come to realize that using HSL values instead of hex makes tweaking themes much more intuitive — especially when adjusting lightness for dark mode.
 
-### Detect user preference
+More on that [here](https://www.joshwcomeau.com/css/color-formats/).
 
-1. Detect user’s system preference and reflect it
-2. If the user’s preference is set in localStorage, override it
+## Define the Theme Type
 
-```jsx
+To get proper type safety with Emotion in a TypeScript setup, I extend the default theme declaration like this:
+
+```ts
+import '@emotion/react'
+
+declare module '@emotion/react' {
+  export interface Theme {
+    background: string
+    text: string
+    primary: string
+  }
+}
+```
+
+## Detect User Preference
+
+Respecting user preferences is key for a good UX. I want the theme to default to light mode if the user prefers it, but also allow them to switch manually.
+I use `localStorage` to save their choice, so it persists across sessions. If they haven’t chosen yet, I check their system preference using `window.matchMedia`.
+
+```ts
 useEffect(() => {
   const savedTheme = localStorage.getItem('theme')
   const prefersLight =
@@ -59,29 +63,23 @@ useEffect(() => {
 
   if (savedTheme) {
     setTheme(savedTheme === 'dark' ? 'dark' : 'light')
-  }
-
-  if (prefersLight) {
+  } else if (prefersLight) {
     setTheme('light')
   }
 }, [])
 ```
 
-### Include it in the highest level of your code
+## Add ThemeProvider to `_app.tsx`
 
-In our case, we will include it in`_app.tsx`
+Here’s the core of the setup. The theme logic wraps the app with both `CacheProvider` and `ThemeProvider`, which makes it available everywhere!
 
-```jsx
+```tsx
 import { useState, useEffect } from 'react'
-
-import { cache } from '@emotion/css'
 import { ThemeProvider, CacheProvider } from '@emotion/react'
-import { AppProps } from 'next/app'
-
-// import style definitions by theme
+import { cache } from '@emotion/css'
+import type { AppProps } from 'next/app'
 import { lightTheme, darkTheme } from '@/components/Styles/themes'
 
-// define the theme for useState
 export type ThemeContext = {
   theme: 'light' | 'dark'
   setTheme: (theme: 'light' | 'dark') => void
@@ -90,7 +88,6 @@ export type ThemeContext = {
 function MyApp({ Component, pageProps }: AppProps) {
   const [theme, setTheme] = useState<ThemeContext['theme']>('dark')
 
-	// check for user preference
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     const prefersLight =
@@ -99,17 +96,16 @@ function MyApp({ Component, pageProps }: AppProps) {
 
     if (savedTheme) {
       setTheme(savedTheme === 'dark' ? 'dark' : 'light')
-    }
-
-    if (prefersLight) {
+    } else if (prefersLight) {
       setTheme('light')
     }
-	}, [])
+  }, [])
 
   return (
     <CacheProvider value={cache}>
       <ThemeProvider theme={theme === 'dark' ? darkTheme : lightTheme}>
         <Component {...pageProps} />
+        <ThemeToggler theme={theme} setTheme={setTheme} />
       </ThemeProvider>
     </CacheProvider>
   )
@@ -118,47 +114,42 @@ function MyApp({ Component, pageProps }: AppProps) {
 export default MyApp
 ```
 
-### And finally, Use it in your components!
+## Use the Theme in Components
 
-```jsx
+Styled components pick up the theme automatically, which is why defining keys like `text` and `background` helps make things more reusable.
+
+```tsx
 import styled from '@emotion/styled'
-
-export const MyComponent = () => {
-  return <Text>text goes here</Text>
-}
 
 const Text = styled.span`
   color: ${({ theme }) => theme.text};
 `
+
+export const MyComponent = () => {
+  return <Text>Hello, theme world!</Text>
+}
 ```
 
-## Bonus : Setting Up Theme Toggle Button
+## Theme Toggle Button
 
-### Create a component for theme toggling
+This little button toggles the theme and saves the choice to `localStorage`, so it persists across page reloads.
 
-```jsx
-import type { ThemeContext } from "@/pages/_app";
+```tsx
+import type { ThemeContext } from '@/pages/_app'
 
 export const ThemeToggler = ({ theme, setTheme }: ThemeContext) => {
   const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-    localStorage.setItem("theme", theme === "light" ? "dark" : "light");
-  };
+    const newTheme = theme === 'light' ? 'dark' : 'light'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+  }
 
-  return (
-    <Container>
-      <Button type="button" onClick={toggleTheme}>
-        {theme === "dark" ? <DarkModeIcon /> : <LightModeIcon />}
-      </Button>
-    </Container>
-  );
-};
+  return <button onClick={toggleTheme}>{theme === 'dark' ? '🌙' : '☀️'}</button>
+}
 ```
 
-### App
+I usually place it inside `_app.tsx` or in the header layout so users can switch anytime.
 
-add the following to return() in \_app.tsx
+## Done!
 
-```jsx
-<ThemeToggler theme={theme} setTheme={setTheme} />
-```
+With this setup, the theme switches instantly and respects both system and user preferences. Everything stays clean and predictable — plus it opens the door for adding smooth transitions or dark-mode-specific UI tweaks later.
