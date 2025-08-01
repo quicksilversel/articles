@@ -1,0 +1,68 @@
+---
+title: 'Designing Cache Stategy for URLs with timestamp'
+description: 'Learn how we built an event-driven infrastructure to purge Akamai cache efficiently when publishing content from AEM, using API Gateway and AWS Lambda.'
+topics: ['akamai', 'aem']
+published: false
+date: '2025-07-30'
+---
+
+## Introduction
+
+When integrating AEM with Akamai, caching can get complicated — especially when URLs include dynamic parameters like timestamps. In this post, I’ll walk through how we built an event-driven architecture that purges Akamai cache on publish, instead of relying on brittle URL-based cache busting.
+
+The core problem? We couldn’t use URLs for caching, since `date` and other query params changed constantly. So we cached by **tag** instead, and built a system that reacts when a CF (content fragment) is published.
+
+## Problem
+
+date was necesssry for cache busting, but it made URLs unstable. For example, a URL like:
+https://aem.example.com/graphql/execute.json/...;date=2024-09-07T00:00:00Z
+
+This effectively disabled caching because every time the date changed, it created a new URL. We needed a way to cache the response without relying on these URLs.
+
+## 💡 Our Solution
+
+Instead of depending on the URL for caching, we designed a flow like this:
+
+AEM → API Gateway → Lambda → Akamai
+
+When a user publishes a CF in AEM, it sends a POST request to API Gateway. This triggers a Lambda that calls [Akamai’s Cache Purge API](https://techdocs.akamai.com/purge-cache/reference/api) with the appropriate cache tag.
+
+### Why use cache tags?
+
+- URLs were unstable (due to timestamps)
+- Tags allow us to define reusable purging logic
+- Akamai supports purging by tag, which is more efficient
+
+## Tag Design
+
+- Tag format: the value of the `cfpath` parameter
+- Example: `/content/dam/lpcms/nikeday`
+- Tag restrictions: no spaces or characters like `=`, `;`, etc. — we had to sanitize the tags
+
+## Cache Key Design
+
+To improve cache efficiency:
+
+- We excluded the `date` param from the cache key
+- Origin requests **still include `date`**
+- This means: cached content is time-agnostic unless explicitly purged
+
+## When does the cache purge happen?
+
+On publish:
+
+1. A user clicks “Publish” in AEM
+2. AEM sends a request with the CF path to API Gateway
+3. Lambda extracts the tag and calls Akamai’s purge API
+4. Akamai invalidates the cached content
+5. The updated content is shown on the site
+
+## Other considerations
+
+- **Rate limits**: Akamai allows 500 requests/min (each tag counts as 1)
+- **Cache tag length**: must be under 128 characters
+- **Latency**: ~20–30 sec lag between publish and purge
+
+## Final Thoughts
+
+We went from a no-cache system to a smart, tag-driven invalidation setup that scales with AEM usage. In the next post, I’ll walk through the Lambda implementation in Node.js.

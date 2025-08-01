@@ -1,0 +1,84 @@
+---
+title: 'Building a Lambda Function to Purge Akamai Cache with Tags'
+description: 'See how we built a Node.js Lambda that triggers Akamai cache invalidation using content fragment paths from AEM. Includes implementation details and pitfalls.'
+topics: ['lambda', 'akamai', 'backend']
+published: false
+date: '2025-07-30'
+---
+
+## Introduction
+
+In the previous post, we covered the infrastructure design behind our AEM-to-Akamai cache purge pipeline. In this post, let’s look at the Lambda implementation that actually makes it work — using [Akamai’s Fast Purge API](https://techdocs.akamai.com/purge-cache/reference/api).
+
+## Overview
+
+We created a lightweight Lambda in Node.js that gets triggered via API Gateway. It receives a payload like:
+
+```json
+{
+  "cfPath": "/content/dam/lpcms/nikeday"
+}
+```
+
+Using this path, it constructs a valid Akamai **cache tag** and sends a purge request.
+
+## Key Steps
+
+1. Validate input and sanitize the CF path
+2. Construct a tag from `cfPath`
+3. Sign and send a request to Akamai’s Fast Purge API
+4. Log the result or errors
+
+## Akamai API Notes
+
+- Endpoint: `https://api.ccu.akamai.com/ccu/v3/invalidate/tag/production`
+- Method: `POST`
+- Auth: Uses Akamai EdgeGrid (we used environment variables to manage credentials)
+
+## Example Snippet
+
+Here’s a simplified structure:
+
+```ts
+import https from 'https'
+import { createRequest } from 'edgegrid' // pseudo
+
+export const handler = async (event) => {
+  const cfPath = event?.cfPath
+  if (!cfPath) return { statusCode: 400, body: 'Missing cfPath' }
+
+  const sanitizedTag = sanitize(cfPath)
+
+  const response = await purgeTag(sanitizedTag)
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ result: 'success', tag: sanitizedTag }),
+  }
+}
+```
+
+## Tag Sanitization
+
+Akamai doesn’t allow symbols like `=`, `;`, `?`, `<>`. So we stripped them using a regex:
+
+```ts
+const sanitize = (tag: string) =>
+  tag.replace(/[=;<>?@\[\]{}]/g, '').slice(0, 128)
+```
+
+## Testing & Deployment
+
+- Deployed with SAM
+- Triggered via API Gateway
+- Payloads tested via Postman and AEM hooks
+- Unit-tested tag sanitization and API call logic
+
+## Lessons Learned
+
+- Always log errors returned by Akamai — they’re often cryptic
+- Rate limits are real (500 purge requests/min)
+- Tag consistency is key — we normalized all incoming paths
+
+## Wrapping Up
+
+This Lambda is the core piece that enables our smart Akamai caching strategy. It's simple, fast, and scalable — and way better than brute-forcing with cache-busting params.
