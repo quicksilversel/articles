@@ -29,7 +29,7 @@ before even trying `my-service` as a full domain.
 
 That’s where `ndots` matters.
 
-## What is `ndots`?
+## What is "ndots"?
 
 This is a setting in `/etc/resolv.conf` that controls when a domain is considered “fully qualified”.
 
@@ -45,7 +45,7 @@ foo.bar
 
 first, **before** trying `foo.bar` directly.
 
-## Why `ndots:1` Helped
+## Why "ndots:1" Helped
 
 At one point, I noticed a huge load on CoreDNS, with tons of lookups piling up even for domains that were already fully qualified.
 
