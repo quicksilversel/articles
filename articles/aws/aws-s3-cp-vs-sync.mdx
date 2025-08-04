@@ -1,0 +1,95 @@
+---
+title: 'aws s3 cp vs sync: What’s the Difference?'
+description: 'Understanding the difference between aws s3 cp and sync, and when to use each.'
+topics: ['s3']
+published: true
+date: '2025-08-02'
+---
+
+## 🚚 `cp` vs `sync` — What’s the deal?
+
+These two AWS CLI commands do very similar things at first glance — but they're built for different use cases.
+
+### 📄 `aws s3 cp`
+
+`cp` (copy) is a direct, one-off file transfer.
+
+https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html
+
+- Copies a **single file** or all files with `--recursive`
+- Doesn’t track or compare state
+- Will overwrite files blindly if names match
+
+**Example**
+
+```bash
+aws s3 cp ./build s3://my-bucket/path/ --recursive
+```
+
+This just says: “Take everything in `./build` and upload it to S3.” No fancy logic.
+
+### 🔄 `aws s3 sync`
+
+`sync` is like `rsync` for S3. It compares source and destination and only updates what's different.
+
+https://docs.aws.amazon.com/cli/latest/reference/s3/sync.html
+
+- Checks file **size and modified time**
+- Only uploads new/changed files
+- Can optionally delete files that no longer exist in source (with `--delete`)
+- More efficient for large, repeated deployments
+
+**Example**
+
+```bash
+aws s3 sync ./build s3://my-bucket/path/
+```
+
+It’ll skip identical files, saving time (and cost). Super useful in CI/CD!
+
+## 🧪 So, when to use what?
+
+| Use Case                     | Use `cp` | Use `sync`           |
+| ---------------------------- | -------- | -------------------- |
+| First-time upload            | ✅       | ✅                   |
+| Re-uploading everything      | ✅       | ❌                   |
+| Incremental deployment (CDN) | ❌       | ✅                   |
+| Clean up removed files       | ❌       | ✅ (with `--delete`) |
+
+## 🏁 Frequently Used Flags (Cheat Sheet)
+
+| Flag                              | Description                                                             |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| `--recursive`                     | Recursively copy/sync directories                                       |
+| `--acl public-read`               | Makes uploaded files public (⚠️ only use if you really want this!)      |
+| `--delete`                        | Delete files in destination that don’t exist in source (only in `sync`) |
+| `--exclude "*" --include "*.jpg"` | Include only certain file types (useful with `sync`)                    |
+| `--dryrun`                        | Simulate the command without actually uploading/changing anything       |
+| `--exact-timestamps`              | Force exact timestamp matching during sync (not just file size)         |
+| `--storage-class`                 | Set storage class (e.g., `STANDARD_IA`, `GLACIER`)                      |
+
+## 🤔 Why --exact-timestamps Didn’t Work for Me
+
+Tried using --exact-timestamps with aws s3 sync to avoid uploading unchanged files… but it didn’t help. Everything still got re-uploaded every single time.
+
+Turns out, it wasn’t sync’s fault — it was the way Docker builds work.
+
+Since I was copying files into the Docker image using `COPY . .`, every file got a fresh modified timestamp during the build, even if the content hadn’t changed. So from sync’s perspective, every file looked new. In that case, sync behaves basically the same as cp.
+
+So yeah — `--exact-timestamps` is great if the timestamps are reliable. But with Docker builds, they’re not.
+
+## 🧪 Where I Actually Use Each
+
+Just to keep things clear:
+
+- `aws s3 cp` → used for Next.js built files
+  These change every time anyway, so no point comparing timestamps. Just blast them up with cp.
+- `aws s3 sync` → used for static assets and images
+  These rarely change, so sync helps avoid wasting time (and bandwidth) re-uploading duplicates.
+
+## ✅ Summary
+
+- `cp` = simple copy, no comparison, good for one-time transfers.
+- `sync` = smart copy, compares files, good for updates or mirroring.
+- Use `--delete` in `sync` to remove files no longer in the source.
+- Always test with `--dryrun` if unsure!
