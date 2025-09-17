@@ -11,7 +11,7 @@ date: '2025-08-18'
 My Java application was experiencing performance issues, and I suspected it was related to how the JVM was managing memory.
 To optimize performance, I needed a clear understanding of how garbage collection (GC) works in the JVM.
 
-## ⚠️ TL;DR – Watch out for Major GC!
+## TL;DR – Watch out for Major GC!
 
 - Major GC (a.k.a. Full GC) causes your whole app to pause—and not in a chill way 😵
 - We saw memory usage spike, GC old gen size grow, and major GC run more frequently
@@ -34,7 +34,7 @@ Java splits memory into multiple areas:
   - **Young Generation**: Eden + Survivor spaces.
   - **Old Generation**: Where long-lived objects are promoted.
 
-🔸 Example: `new User()` allocates memory in the heap.
+Example: `new User()` allocates memory in the heap.
 
 ### 2. Stack Memory
 
@@ -42,7 +42,7 @@ Java splits memory into multiple areas:
 - Per-thread stack.
 - Cleared automatically on method return.
 
-🔸 Example: `int count = 5` goes on the stack.
+Example: `int count = 5` goes on the stack.
 
 ### 3. Metaspace (Java 8+)
 
@@ -50,7 +50,7 @@ Java splits memory into multiple areas:
 - Native memory (not heap).
 - Grows dynamically but can OOM.
 
-🔸 Example: Defining a class like `class Product`.
+Example: Defining a class like `class Product`.
 
 ### 4. Code Cache
 
@@ -67,7 +67,7 @@ Java splits memory into multiple areas:
 - Where `new Object()` lives.
 - Operated on by the GC.
 
-### 🧱 Heap Structure
+### Heap Structure
 
 | Generation       | Description                                       |
 | ---------------- | ------------------------------------------------- |
@@ -75,13 +75,13 @@ Java splits memory into multiple areas:
 | Old Generation   | Long-lived objects promoted here.                 |
 | Metaspace        | (Not technically heap) Class metadata lives here. |
 
-### 📦 GC Lifecycle Example
+### GC Lifecycle Example
 
 1. `User user = new User();` → Eden
 2. Survives GC → Survivor → Old Gen
 3. Becomes unreachable → Collected by GC
 
-### 💥 Heap Management Tips
+### Heap Management Tips
 
 - Too small → `OutOfMemoryError`
 - Too large → Long GC pauses
@@ -97,7 +97,7 @@ Java splits memory into multiple areas:
 
 ## GC Spikes: What Do They Mean?
 
-### 📈 Minor GC Spikes
+### Minor GC Spikes
 
 - High object churn
 - Eden fills quickly
@@ -108,7 +108,7 @@ Java splits memory into multiple areas:
 - Tune `-Xmn`, increase Young Gen
 - Use object pools
 
-### 📈 Major GC Spikes
+### Major GC Spikes
 
 - Old Gen pressure
 - Potential memory leaks
@@ -176,7 +176,7 @@ exclude_null(avg:jvm.gc.old_gen_size{...})
 
 Since it was caused by the release of a new service, We asked the devs to dig into the app to identify memory-heavy objects. A memory leak or retained reference was likely responsible.
 
-## Final TL;DR ✨
+## Final TL;DR
 
 - GC manages Java memory automatically.
 - Minor GC = Young Gen; fast and frequent.

@@ -10,7 +10,7 @@ date: '2025-01-09'
 
 Sometimes you just need to read and write stuff from S3 inside a Lambda — like uploading `.pem` keys or fetching configs. Here's a breakdown of how that works, what permissions you need, and some gotchas to avoid.
 
-## 📥 Reading from S3 in Lambda
+## Reading from S3 in Lambda
 
 Start by importing the required modules from the AWS SDK v3:
 
@@ -42,7 +42,7 @@ const readFromS3 = async (
 
 In the real world, you might dynamically construct the filename (e.g. using today’s date), and read multiple files in parallel using `Promise.all`.
 
-## 📤 Writing to S3 in Lambda
+## Writing to S3 in Lambda
 
 ```ts
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
@@ -73,7 +73,7 @@ const writeToS3 = async (
 
 💡 You can use `application/json`, `text/plain`, or whatever `ContentType` fits your use case.
 
-## ✅ IAM Permissions
+## IAM Permissions
 
 To allow Lambda to read/write from S3, attach this policy to the execution role:
 
@@ -107,15 +107,15 @@ Policies:
             - !Sub arn:aws:s3:::your-s3-bucket-${GlobalEnvironment}/*
 ```
 
-🔒 Keep access as narrow as possible — ideally only specific actions for specific buckets or prefixes.
+> Keep access as narrow as possible — ideally only specific actions for specific buckets or prefixes.
 
-## 🤔 Why All This?
+## Why All This?
 
 - S3 is a great place to store static files, dynamic configs, or sensitive assets like `.pem` keys.
 - Lambdas are stateless, so pushing/pulling files via S3 is a clean way to persist anything.
 - AWS SDK v3 is modular and tree-shakeable — use only what you need.
 
-## 🔚 Wrap-up
+## Wrap-up
 
 - Use `GetObjectCommand` to read and stream file contents
 - Use `PutObjectCommand` to upload content to S3
